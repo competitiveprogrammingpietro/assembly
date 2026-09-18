@@ -21,11 +21,16 @@ _start:
 	call _print_buffer
         call _sort
 	call _print_buffer
-	jmp _end	
+	
+	; exit(0)
+	mov rax, 0x3c
+	mov rdi, 0x00
+	syscall
 
-
+; Trivial routine which prints out the numbers array in ASCII format
 _print_buffer:
-	; Loop throug the array and print it out
+
+	; Loop through the array and print it out
 	xor rbx, rbx ; i = 0
 	mov rcx, numbers_length ; length
 	mov rsi, numbers
@@ -43,40 +48,44 @@ _print_buffer:
 
 .loop_end:
 
-	; Write null terminator character
-	mov byte [buffer + rbx], 0x0
+	; Write a separator '\n'
+	mov byte [buffer + rbx], 0x0a
 
 	mov rax, 1
 	mov rdi, 1
 	mov rsi, buffer
-	mov rdx, numbers_length
+	mov rdx, numbers_length + 1 ; One for the '='
 	syscall
 	ret
 
+; End _print_buffer
+
+; Insertion sort algorithm
 _sort:
 	xor rsi, rsi ; i = 0
 	xor rdi, rdi ; j = 0
 	mov rcx, numbers
+	mov rsi, 0x1 ; i = 1
 	
 .sort_loop_begin_rsi:
-	cmp rsi, numbers_length
+	cmp rsi, numbers_length + 1
 	jge .sort_loop_end
-	mov rax, [numbers + rsi * 8]
-	mov rdi, rsi ; j = i
+	lea rdi, [rsi - 1] ; j = i - 1
 
 .sort_loop_begin_rdi:
-	cmp rdi, numbers_length
-	jge .sort_loop_increment_rsi
-	cmp rax, [numbers + rdi * 8]
-	jle .sort_loop_increment_rdi ; Nothing to be done alreay sorted
+	cmp rdi, 0
+	jl .sort_loop_increment_rsi
+	mov rax, [numbers + rdi * 8]
+	mov rbx, [numbers + (rdi -1) * 8]
+	cmp rax, rbx
+	jge .sort_loop_decrement_rdi ; Nothing to be done alreay sorted
 	
 	; swap positions
-	mov rdx, [numbers + rdi * 8] 
-	mov [numbers + rdi * 8], rax
-	mov [numbers + rsi * 8], rdx
+	mov [numbers + (rdi -1) * 8], rax
+	mov [numbers + rdi * 8], rbx
 
-.sort_loop_increment_rdi:
-	inc rdi
+.sort_loop_decrement_rdi:
+	dec rdi
 	jmp .sort_loop_begin_rdi
 
 .sort_loop_increment_rsi:
@@ -87,11 +96,6 @@ _sort:
 	ret
 	
 
-_end:
-	; exit(0)
-	mov rax, 0x3c
-	mov rdi, 0x00
-	syscall
 	
 
 
